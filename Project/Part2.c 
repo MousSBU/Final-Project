@@ -1,0 +1,140 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <ctype.h>
+
+#include "queue.h"
+#include "stack.h"
+
+#define MAXR 50
+#define MAXC 50
+#define GAME_TIME 60
+
+char maze[MAXR][MAXC];
+int rows, cols;
+
+void import_maze(char *file){
+    FILE *fp= fopen(file, "r");
+    if(!fp) {
+        printf("Maze file not found!\n");
+        exit(1);
+    }
+    rows = 0;
+    while(fgets(maze[rows], MAXC, fp)){
+        cols = 0;
+        while (maze[rows][cols] && maze [rows][cols] != '\n'){
+            cols++;
+        }
+        rows++;
+    }
+}
+
+void print_maze(int r, int c) {
+    for (int i=0; i<rows; i++){
+        for(int j=0; j<cols; j++){
+            if(i==r && j==c)
+                printf("A");
+            else
+                printf("%c", maze[i][j]);
+        }
+        printf("\n");
+    }
+}
+
+int visited[MAXR][MAXC];
+
+int BFS(int sr, int sc){
+    Queue q;
+    initQueue(&q);
+
+    int dist[MAXR][MAXC] = {0};
+    enqueue(&q, sr, sc);
+    visited[sr][sc] = 1;
+    int maxDist = 0;
+    while(!isEmpty(&q)){
+        Point p = dequeue(&q);
+
+        int dr[4] = {-1,1,0,0};
+        int dc[4] = {0,0,-1,1};
+
+        for (int i = 0; i<4; i++){
+            int nr = p.r + dr[i];
+            int nc = p.c + dc[i];
+
+            if (nr >= 0 && nr < rows &&
+                nc >= 0 && nc < cols &&
+                maze[nr][nc] != '*' &&
+                !visited[nr][nc]) {
+
+                visited[nr][nc] = 1;
+                dist[nr][nc] = dist[p.r][p.c] + 1;
+                if (dist[nr][nc] > maxDist)
+                    maxDist = dist[nr][nc];
+
+                enqueue(&q, nr, nc);
+        }
+    }
+}
+return maxDist;
+}
+
+int DFS (int sr, int sc){
+    Stack s;
+    initStack(&s);
+
+    int dist[MAXR][MAXC] = {0};
+    push(&s, sr, sc);
+    visited[sr][sc] = 1;
+
+    int maxDist = 0;
+
+    while (!isEmpty(&s)) {
+        Point p = pop(&s);
+
+        int dr[4] = {-1, 1, 0, 0};
+        int dc[4] = {0, 0, -1, 1};
+
+        for (int i = 0; i < 4; i++) {
+            int nr = p.r + dr[i];
+            int nc = p.c + dc[i];
+
+            if (nr >= 0 && nr < rows &&
+                nc >= 0 && nc < cols &&
+                maze[nr][nc] != '*' &&
+                !visited[nr][nc]) {
+
+                visited[nr][nc] = 1;
+                dist[nr][nc] = dist[p.r][p.c] + 1;
+                if (dist[nr][nc] > maxDist)
+                    maxDist = dist[nr][nc];
+
+                push(&s, nr, nc);
+            }
+        }
+    }
+    return maxDist;
+}
+
+int main() {
+    import_maze("maze.txt");
+
+    int exit_r = 0, exit_c = 0;
+    for (int i = 0; i < rows; i++)
+         for (int j = 0; j < cols; j++)
+            visited[i][j] = 0;
+
+    int bfs_steps = BFS(exit_r, exit_c);
+
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            visited[i][j] = 0;
+
+    int dfs_steps = DFS(exit_r, exit_c);
+
+     printf("\n--- BFS vs DFS Comparison ---\n");
+    printf("BFS farthest distance: %d\n", bfs_steps);
+    printf("DFS farthest distance: %d\n", dfs_steps);
+    
+
+    return 0;
+}
